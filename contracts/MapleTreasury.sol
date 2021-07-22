@@ -7,9 +7,9 @@ import { IERC20, SafeERC20 } from "../../../../lib/openzeppelin-contracts/contra
 import { IMapleToken }    from "../../../external-interfaces/IMapleToken.sol";
 import { IUniswapRouter } from "../../../external-interfaces/IUniswapRouter.sol";
 
-import { Util } from "../../../libraries/util/v1/Util.sol";
+import { Util } from "../../../libraries/util/contracts/Util.sol";
 
-import { IMapleGlobals } from "../../globals/v1/interfaces/IMapleGlobals.sol";
+import { IMapleGlobals } from "../../globals/contracts/interfaces/IMapleGlobals.sol";
 
 import { IMapleTreasury } from "./interfaces/IMapleTreasury.sol";
 

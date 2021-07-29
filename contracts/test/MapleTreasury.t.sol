@@ -2,21 +2,29 @@
 pragma solidity 0.6.11;
 pragma experimental ABIEncoderV2;
 
-import { IERC20 } from "../../../../../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20 }        from "../../modules/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { Util }          from "../../modules/util/contracts/Util.sol";
+import { IMapleGlobals } from "../../modules/globals/contracts/interfaces/IMapleGlobals.sol";
+import { DSTest }        from "../../modules/ds-test/src/test.sol";
 
-import { Util } from "../../../../libraries/util/contracts/Util.sol";
+import { Governor }    from "./accounts/Governor.sol";
+import { MapleTreasury } from "../MapleTreasury.sol";
 
-import { IMapleGlobals } from "../../../globals/contracts/interfaces/IMapleGlobals.sol";
+contract MapleTreasuryTest is DSTest {
 
-import { TestUtil } from "../../../../test/TestUtil.sol";
-
-contract MapleTreasuryTest is TestUtil {
+    Governor    realGov; 
+    Governor    fakeGov;
 
     function setUp() public {
         setUpGlobals();
         setUpTokens();
         setUpOracles();
         createHolders();
+
+        realGov         = new Governor();
+        fakeGov         = new Governor();
+        treasury        = new Treasury();
+        
 
         mint("WBTC", address(this),  10 * BTC);
         mint("WETH", address(this),  10 ether);

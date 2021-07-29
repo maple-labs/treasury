@@ -1,0 +1,34 @@
+{
+  "language": "Solidity",
+  "sources": {
+     "contracts/interfaces/IMapleTreasury.sol": {
+      "urls": ["contracts/interfaces/IMapleTreasury.sol"]
+    },
+    "contracts/MapleTreasury.sol": {
+      "urls": ["contracts/MapleTreasury.sol"]
+    },
+    "contracts/test/MapleTreasury.t.sol": {
+      "urls": ["contracts/test/MapleTreasury.t.sol"]
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": false
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "metadata",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.gasEstimates"
+        ],
+        "": ["ast"]
+      }
+    },
+    "metadata": {
+      "bytecodeHash": "none"
+    }
+  }
+}

@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import { IERC20 } from "../../../modules/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-import { IMapleGlobals } from "../../../modules/globals/interfaces/IMapleGlobals.sol"; 
+import { IMapleGlobals } from "../../../modules/globals/contracts/interfaces/IMapleGlobals.sol"; 
 
 contract Governor {
 

@@ -102,7 +102,7 @@ contract MapleTreasury is IMapleTreasury {
         IMapleGlobals _globals = IMapleGlobals(globals);
 
         uint256 assetBalance = IERC20(asset).balanceOf(address(this));
-        uint256 minAmount    = Util.calcMinAmount(_globals, asset, fundsToken, assetBalance);
+        uint256 minAmount    = Util.calcMinAmount(address(_globals), asset, fundsToken, assetBalance);
 
         IERC20(asset).safeApprove(uniswapRouter, uint256(0));
         IERC20(asset).safeApprove(uniswapRouter, assetBalance);

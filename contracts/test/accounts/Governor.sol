@@ -4,7 +4,8 @@ pragma experimental ABIEncoderV2;
 
 import { IERC20 } from "../../../modules/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-import { IMapleGlobals } from "../../../modules/globals/contracts/interfaces/IMapleGlobals.sol"; 
+import { IMapleGlobals } from "../../../modules/globals/contracts/interfaces/IMapleGlobals.sol";
+import { MapleGlobals }  from "../../../modules/globals/contracts/MapleGlobals.sol";
 
 contract Governor {
 
@@ -143,6 +144,15 @@ contract Governor {
     function try_acceptGovernor(address globals) external returns (bool ok) {
         string memory sig = "acceptGovernor()";
         (ok,) = globals.call(abi.encodeWithSignature(sig));
+    }
+
+    function try_setGlobals(address target, address _globals) external returns (bool ok) {
+        string memory sig = "setGlobals(address)";
+        (ok,) = address(target).call(abi.encodeWithSignature(sig, _globals));
+    }
+
+    function createGlobals(address mpl) external returns (MapleGlobals globals) {
+        return MapleGlobals(new MapleGlobals(address(this), mpl, address(1)));
     }
 
 }

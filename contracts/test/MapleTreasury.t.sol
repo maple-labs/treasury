@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.6.11;
-pragma experimental ABIEncoderV2;
 
 import { IERC20 }        from "../../modules/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { ERC20 }         from "../../modules/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
@@ -14,11 +13,9 @@ import { GlobalAdmin }    from "./accounts/GlobalAdmin.sol";
 import { MapleTreasury }  from "../MapleTreasury.sol";
 import { IMapleTreasury } from "../interfaces/IMapleTreasury.sol";
 
-contract MapleToken is ERC20 {
+contract MapleTokenLike is ERC20 {
 
-    constructor(string memory name, string memory symbol) public ERC20(name, symbol) {
-
-    }
+    constructor(string memory name, string memory symbol) public ERC20(name, symbol) {}
 
     function mint(address to, uint256 amt) public {
         _mint(to, amt);
@@ -33,20 +30,17 @@ contract MapleToken is ERC20 {
 interface Hevm {
 
     function warp(uint256) external;
+
     function store(address,bytes32,bytes32) external;
 
 }
 
 interface IBasicFDT {
+
     /**
         @dev Withdraws all available funds for the calling FDT holder.
      */
     function withdrawFunds() external;
-}
-
-interface IMapleGlobalsLike {
-
-    function getLatestPrice(address asset) external view returns (uint256);
 
 }
 
@@ -65,7 +59,7 @@ contract MapleTreasuryTest is DSTest {
     MapleTreasury         treasury;
     MapleGlobals           globals;
     GlobalAdmin    realGlobalAdmin;
-    MapleToken                 mpl;
+    MapleTokenLike             mpl;
     Hevm                      hevm;
     Holder                     hal;
     Holder                     hue;
@@ -93,7 +87,7 @@ contract MapleTreasuryTest is DSTest {
         realGlobalAdmin = new GlobalAdmin();
         realGov         = new Governor();
         fakeGov         = new Governor();
-        mpl             = new MapleToken("Maple", "MPL");
+        mpl             = new MapleTokenLike("Maple", "MPL");
         globals         = new MapleGlobals(address(realGov), address(mpl), address(realGlobalAdmin));
         treasury        = new MapleTreasury(address(mpl), USDC, UNISWAP_V2_ROUTER_02, address(globals));
         hal             = new Holder();
@@ -115,11 +109,11 @@ contract MapleTreasuryTest is DSTest {
         IMapleGlobals globals2 = fakeGov.createGlobals(address(mpl));               // Create upgraded MapleGlobals
         assertEq(address(treasury.globals()), address(globals));
 
-        assertTrue(!fakeGov.try_setGlobals(address(treasury), address(globals2)));  // Non-governor cannot set new globals
+        assertTrue(!fakeGov.try_treasury_setGlobals(address(treasury), address(globals2)));  // Non-governor cannot set new globals
 
         globals2 = realGov.createGlobals(address(mpl));                             // Create upgraded MapleGlobals
 
-        assertTrue(realGov.try_setGlobals(address(treasury), address(globals2)));   // Governor can set new globals
+        assertTrue(realGov.try_treasury_setGlobals(address(treasury), address(globals2)));   // Governor can set new globals
         assertEq(address(treasury.globals()), address(globals2));                   // Globals is updated
     }
 
@@ -132,8 +126,8 @@ contract MapleTreasuryTest is DSTest {
         assertEq(IERC20(USDC).balanceOf(address(realGov)),          0);
         assertEq(treasury.globals(), address(globals));
 
-        assertTrue(!fakeGov.try_reclaimERC20_treasury(address(treasury), USDC, 40 * USD));  // Non-governor can't withdraw
-        assertTrue( realGov.try_reclaimERC20_treasury(address(treasury), USDC, 40 * USD));
+        assertTrue(!fakeGov.try_treasury_reclaimERC20(address(treasury), USDC, 40 * USD));  // Non-governor can't withdraw
+        assertTrue( realGov.try_treasury_reclaimERC20(address(treasury), USDC, 40 * USD));
 
         assertEq(IERC20(USDC).balanceOf(address(treasury)), 60 * USD);  // Can be distributed to MPL holders
         assertEq(IERC20(USDC).balanceOf(address(realGov)),  40 * USD);  // Withdrawn to MapleDAO address for funding
@@ -156,8 +150,8 @@ contract MapleTreasuryTest is DSTest {
         assertEq(IERC20(USDC).balanceOf(address(treasury)), 100 * USD);
         assertEq(IERC20(USDC).balanceOf(address(mpl)),              0);
 
-        assertTrue(!fakeGov.try_distributeToHolders(address(treasury)));  // Non-governor can't distribute
-        assertTrue( realGov.try_distributeToHolders(address(treasury)));  // Governor can distribute
+        assertTrue(!fakeGov.try_treasury_distributeToHolders(address(treasury)));  // Non-governor can't distribute
+        assertTrue( realGov.try_treasury_distributeToHolders(address(treasury)));  // Governor can distribute
 
         assertEq(IERC20(USDC).balanceOf(address(treasury)),         0);  // Withdraws all funds
         assertEq(IERC20(USDC).balanceOf(address(mpl)),      100 * USD);  // Withdrawn to MPL address, where accounts can claim funds
@@ -167,8 +161,6 @@ contract MapleTreasuryTest is DSTest {
     }
 
     function test_convertERC20() public {
-
-        IMapleGlobalsLike _globals = IMapleGlobalsLike(address(globals));
 
         assertEq(IERC20(WBTC).balanceOf(address(treasury)), 0);
         assertEq(IERC20(WETH).balanceOf(address(treasury)), 0);
@@ -183,13 +175,13 @@ contract MapleTreasuryTest is DSTest {
         assertEq(IERC20(DAI).balanceOf(address(treasury)),  100 ether);
         assertEq(IERC20(USDC).balanceOf(address(treasury)),         0);
 
-        uint256 expectedAmtFromWBTC = Util.calcMinAmount(_globals, WBTC, USDC,  10 * BTC);
-        uint256 expectedAmtFromWETH = Util.calcMinAmount(_globals, WETH, USDC,  10 ether);
-        uint256 expectedAmtFromDAI  = Util.calcMinAmount(_globals, DAI,  USDC, 100 ether);
+        uint256 expectedAmtFromWBTC = Util.calcMinAmount(address(globals), WBTC, USDC,  10 * BTC);
+        uint256 expectedAmtFromWETH = Util.calcMinAmount(address(globals), WETH, USDC,  10 ether);
+        uint256 expectedAmtFromDAI  = Util.calcMinAmount(address(globals), DAI,  USDC, 100 ether);
 
         /*** Convert WBTC ***/
-        assertTrue(!fakeGov.try_convertERC20(address(treasury), WBTC));  // Non-governor can't convert
-        assertTrue( realGov.try_convertERC20(address(treasury), WBTC));  // Governor can convert
+        assertTrue(!fakeGov.try_treasury_convertERC20(address(treasury), WBTC));  // Non-governor can't convert
+        assertTrue( realGov.try_treasury_convertERC20(address(treasury), WBTC));  // Governor can convert
 
         assertEq(IERC20(WBTC).balanceOf(address(treasury)),         0);
         assertEq(IERC20(DAI).balanceOf(address(treasury)),  100 ether);
@@ -199,8 +191,8 @@ contract MapleTreasuryTest is DSTest {
         realGov.distributeToHolders(IMapleTreasury(address(treasury)));  // Empty treasury balance of USDC
 
         /*** Convert WETH ***/
-        assertTrue(!fakeGov.try_convertERC20(address(treasury), WETH));  // Non-governor can't convert
-        assertTrue( realGov.try_convertERC20(address(treasury), WETH));  // Governor can convert
+        assertTrue(!fakeGov.try_treasury_convertERC20(address(treasury), WETH));  // Non-governor can't convert
+        assertTrue( realGov.try_treasury_convertERC20(address(treasury), WETH));  // Governor can convert
 
         assertEq(IERC20(WETH).balanceOf(address(treasury)),         0);
         assertEq(IERC20(DAI).balanceOf(address(treasury)),  100 ether);
@@ -210,8 +202,8 @@ contract MapleTreasuryTest is DSTest {
         realGov.distributeToHolders(IMapleTreasury(address(treasury)));  // Empty treasury balance of USDC
 
         /*** Convert DAI ***/
-        assertTrue(!fakeGov.try_convertERC20(address(treasury), DAI));  // Non-governor can't convert
-        assertTrue( realGov.try_convertERC20(address(treasury), DAI));  // Governor can convert
+        assertTrue(!fakeGov.try_treasury_convertERC20(address(treasury), DAI));  // Non-governor can't convert
+        assertTrue( realGov.try_treasury_convertERC20(address(treasury), DAI));  // Governor can convert
 
         assertEq(IERC20(WETH).balanceOf(address(treasury)), 0);
         assertEq(IERC20(DAI).balanceOf(address(treasury)),  0);
@@ -251,4 +243,5 @@ contract MapleTreasuryTest is DSTest {
     function getDiff(uint256 val0, uint256 val1) internal pure returns (uint256 diff) {
         diff = val0 > val1 ? val0 - val1 : val1 - val0;
     }
+
 }

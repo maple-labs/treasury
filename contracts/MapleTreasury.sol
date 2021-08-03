@@ -3,18 +3,18 @@ pragma solidity 0.6.11;
 
 import { SafeMath }          from "../modules/openzeppelin-contracts/contracts/math/SafeMath.sol";
 import { IERC20, SafeERC20 } from "../modules/openzeppelin-contracts/contracts/token/ERC20/SafeERC20.sol";
-
-import { Util }          from "../modules/util/contracts/Util.sol";
-import { IMapleGlobals } from "../modules/globals/contracts/interfaces/IMapleGlobals.sol";
+import { Util }              from "../modules/util/contracts/Util.sol";
+import { IMapleGlobals }     from "../modules/globals/contracts/interfaces/IMapleGlobals.sol";
 
 import { IMapleTreasury } from "./interfaces/IMapleTreasury.sol";
 
-interface IMapleToken {
+interface IMapleTokenLike {
 
     function updateFundsReceived() external;
+
 }
 
-interface IUniswapRouter {
+interface IUniswapRouterLike {
 
     function swapExactTokensForTokens(
         uint256 amountIn,
@@ -38,6 +38,7 @@ interface IUniswapRouter {
     ) external pure returns (uint256 amountB);
 
     function WETH() external pure returns (address);
+
 }
 
 /// @title MapleTreasury earns revenue from Loans and distributes it to token holders and the Maple development team.
@@ -92,7 +93,7 @@ contract MapleTreasury is IMapleTreasury {
         IERC20 _fundsToken = IERC20(fundsToken);
         uint256 distributeAmount = _fundsToken.balanceOf(address(this));
         _fundsToken.safeTransfer(mpl, distributeAmount);
-        IMapleToken(mpl).updateFundsReceived();
+        IMapleTokenLike(mpl).updateFundsReceived();
         emit DistributedToHolders(distributeAmount);
     }
 
@@ -117,7 +118,7 @@ contract MapleTreasury is IMapleTreasury {
 
         if (middleAsset) path[2] = fundsToken;
 
-        uint256[] memory returnAmounts = IUniswapRouter(uniswapRouter).swapExactTokensForTokens(
+        uint256[] memory returnAmounts = IUniswapRouterLike(uniswapRouter).swapExactTokensForTokens(
             assetBalance,
             minAmount.sub(minAmount.mul(_globals.maxSwapSlippage()).div(10_000)),
             path,

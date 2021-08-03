@@ -70,7 +70,9 @@ contract MapleTreasuryTest is DSTest {
     Holder                     hal;
     Holder                     hue;
 
-    constructor() public { hevm = Hevm(address(bytes20(uint160(uint256(keccak256("hevm cheat code")))))); }
+    constructor() public {
+        hevm = Hevm(address(bytes20(uint160(uint256(keccak256("hevm cheat code")))))); 
+    }
 
     address constant UNISWAP_V2_ROUTER_02 = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;  // Uniswap V2 Router
     address constant USDC                 = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;

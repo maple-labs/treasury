@@ -16,8 +16,8 @@ contract Governor {
         IMapleGlobals(globals).setPriceOracle(asset, oracle); 
     }
 
-    function distributeToHolders(IMapleTreasury treasury) external {
-        treasury.distributeToHolders(); 
+    function distributeToHolders(address treasury) external {
+        IMapleTreasury(treasury).distributeToHolders(); 
     }
 
     /*********************/
@@ -25,22 +25,22 @@ contract Governor {
     /*********************/
     function try_treasury_setGlobals(address target, address _globals) external returns (bool ok) {
         string memory sig = "setGlobals(address)";
-        (ok,) = address(target).call(abi.encodeWithSignature(sig, _globals));
+        (ok,) = target.call(abi.encodeWithSignature(sig, _globals));
     }
 
     function try_treasury_reclaimERC20(address treasury, address asset, uint256 amount) external returns (bool ok) {
         string memory sig = "reclaimERC20(address,uint256)";
-        (ok,) = address(treasury).call(abi.encodeWithSignature(sig, asset, amount));
+        (ok,) = treasury.call(abi.encodeWithSignature(sig, asset, amount));
     }
 
     function try_treasury_distributeToHolders(address treasury) external returns (bool ok) {
         string memory sig = "distributeToHolders()";
-        (ok,) = address(treasury).call(abi.encodeWithSignature(sig));
+        (ok,) = treasury.call(abi.encodeWithSignature(sig));
     }
 
     function try_treasury_convertERC20(address treasury, address asset) external returns (bool ok) {
         string memory sig = "convertERC20(address)";
-        (ok,) = address(treasury).call(abi.encodeWithSignature(sig, asset));
+        (ok,) = treasury.call(abi.encodeWithSignature(sig, asset));
     }
 
     function createGlobals(address mpl) external returns (MapleGlobals globals) {

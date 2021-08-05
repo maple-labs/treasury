@@ -1,0 +1,35 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/MapleTreasury.sol": {
+      "urls": ["contracts/MapleTreasury.sol"]
+    },
+    "contracts/test/MapleTreasury.t.sol": {
+      "urls": ["contracts/test/MapleTreasury.t.sol"]
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+     "libraries": {
+      "": {
+        "modules/util/contracts/Util.sol:Util": "0x95f9676A34aF2675B63948dDba8F8c798741A52a"
+      }
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode"
+        ],
+        "": ["ast"]
+      }
+    },
+    "metadata": {
+      "bytecodeHash": "none"
+    }
+  }
+}

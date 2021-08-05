@@ -1,141 +1,145 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.6.11;
-pragma experimental ABIEncoderV2;
 
-import { IERC20 } from "../../../../../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20 }        from "../../modules/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { ERC20 }         from "../../modules/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import { Util }          from "../../modules/util/contracts/Util.sol";
+import { IMapleGlobals } from "../../modules/globals/contracts/interfaces/IMapleGlobals.sol";
+import { MapleGlobals }  from "../../modules/globals/contracts/MapleGlobals.sol";
+import { DSTest }        from "../../modules/ds-test/src/test.sol";
 
-import { Util } from "../../../../libraries/util/contracts/Util.sol";
+import { Governor }       from "./accounts/Governor.sol";
+import { GlobalAdmin }    from "./accounts/GlobalAdmin.sol";
+import { MapleTreasury }  from "../MapleTreasury.sol";
+import { IMapleTreasury } from "../interfaces/IMapleTreasury.sol";
 
-import { IMapleGlobals } from "../../../globals/contracts/interfaces/IMapleGlobals.sol";
+contract MockToken is ERC20 {
 
-import { TestUtil } from "../../../../test/TestUtil.sol";
+    constructor(string memory name, string memory symbol) public ERC20(name, symbol) {}
 
-contract MapleTreasuryTest is TestUtil {
-
-    function setUp() public {
-        setUpGlobals();
-        setUpTokens();
-        setUpOracles();
-        createHolders();
-
-        mint("WBTC", address(this),  10 * BTC);
-        mint("WETH", address(this),  10 ether);
-        mint("DAI",  address(this), 100 ether);
-        mint("USDC", address(this), 100 * USD);
+    function mint(address to, uint256 amt) public {
+        _mint(to, amt);
     }
 
-    function test_setGlobals() public {
-        IMapleGlobals globals2 = fakeGov.createGlobals(address(mpl));               // Create upgraded MapleGlobals
-
-        assertEq(address(treasury.globals()), address(globals));
-
-        assertTrue(!fakeGov.try_setGlobals(address(treasury), address(globals2)));  // Non-governor cannot set new globals
-
-        globals2 = gov.createGlobals(address(mpl));                                 // Create upgraded MapleGlobals
-
-        assertTrue(gov.try_setGlobals(address(treasury), address(globals2)));       // Governor can set new globals
-        assertEq(address(treasury.globals()), address(globals2));                   // Globals is updated
-    }
-
-    function test_withdrawFunds() public {
-        assertEq(IERC20(USDC).balanceOf(address(treasury)), 0);
-
-        IERC20(USDC).transfer(address(treasury), 100 * USD);
-
-        assertEq(IERC20(USDC).balanceOf(address(treasury)), 100 * USD);
-        assertEq(IERC20(USDC).balanceOf(address(gov)),         0);
-
-        assertTrue(!fakeGov.try_reclaimERC20_treasury(USDC, 40 * USD));  // Non-governor can't withdraw
-        assertTrue(     gov.try_reclaimERC20_treasury(USDC, 40 * USD));
-
-        assertEq(IERC20(USDC).balanceOf(address(treasury)), 60 * USD);  // Can be distributed to MPL holders
-        assertEq(IERC20(USDC).balanceOf(address(gov)), 40 * USD);  // Withdrawn to MapleDAO address for funding
-    }
-
-    function test_distributeToHolders() public {
-        assertEq(mpl.balanceOf(address(hal)), 0);
-        assertEq(mpl.balanceOf(address(hue)), 0);
-
-        mpl.transfer(address(hal), mpl.totalSupply() * 25 / 100);  // 25%
-        mpl.transfer(address(hue), mpl.totalSupply() * 75 / 100);  // 75%
-
-        assertEq(mpl.balanceOf(address(hal)), 2_500_000 ether);
-        assertEq(mpl.balanceOf(address(hue)), 7_500_000 ether);
-
-        assertEq(IERC20(USDC).balanceOf(address(treasury)), 0);
-
-        IERC20(USDC).transfer(address(treasury), 100 * USD);
-
-        assertEq(IERC20(USDC).balanceOf(address(treasury)), 100 * USD);
-        assertEq(IERC20(USDC).balanceOf(address(mpl)),              0);
-
-        assertTrue(!fakeGov.try_distributeToHolders());  // Non-governor can't distribute
-        assertTrue(     gov.try_distributeToHolders());  // Governor can distribute
-
-        assertEq(IERC20(USDC).balanceOf(address(treasury)),         0);  // Withdraws all funds
-        assertEq(IERC20(USDC).balanceOf(address(mpl)),      100 * USD);  // Withdrawn to MPL address, where accounts can claim funds
-
-        assertEq(IERC20(USDC).balanceOf(address(hal)), 0);  // Token holder hasn't claimed
-        assertEq(IERC20(USDC).balanceOf(address(hue)), 0);  // Token holder hasn't claimed
-
-        hal.withdrawFunds(address(mpl));
-        hue.withdrawFunds(address(mpl));
-
-        withinDiff(IERC20(USDC).balanceOf(address(hal)), 25 * USD, 1);  // Token holder has claimed proportional share of USDC
-        withinDiff(IERC20(USDC).balanceOf(address(hue)), 75 * USD, 1);  // Token holder has claimed proportional share of USDC
-    }
-
-    function test_convertERC20() public {
-
-        IMapleGlobals _globals = IMapleGlobals(address(globals));
-
-        assertEq(IERC20(WBTC).balanceOf(address(treasury)), 0);
-        assertEq(IERC20(WETH).balanceOf(address(treasury)), 0);
-        assertEq(IERC20(DAI).balanceOf(address(treasury)),  0);
-
-        IERC20(WBTC).transfer(address(treasury), 10 * BTC);
-        IERC20(WETH).transfer(address(treasury), 10 ether);
-        IERC20(DAI).transfer(address(treasury), 100 ether);
-
-        assertEq(IERC20(WBTC).balanceOf(address(treasury)),  10 * BTC);
-        assertEq(IERC20(WETH).balanceOf(address(treasury)),  10 ether);
-        assertEq(IERC20(DAI).balanceOf(address(treasury)),  100 ether);
-        assertEq(IERC20(USDC).balanceOf(address(treasury)),         0);
-
-        uint256 expectedAmtFromWBTC = Util.calcMinAmount(_globals, WBTC, USDC,  10 * BTC);
-        uint256 expectedAmtFromWETH = Util.calcMinAmount(_globals, WETH, USDC,  10 ether);
-        uint256 expectedAmtFromDAI  = Util.calcMinAmount(_globals, DAI,  USDC, 100 ether);
-
-        /*** Convert WBTC ***/
-        assertTrue(!fakeGov.try_convertERC20(WBTC));  // Non-governor can't convert
-        assertTrue(     gov.try_convertERC20(WBTC));  // Governor can convert
-
-        assertEq(IERC20(WBTC).balanceOf(address(treasury)),         0);
-        assertEq(IERC20(DAI).balanceOf(address(treasury)),  100 ether);
-
-        withinPercentage(IERC20(USDC).balanceOf(address(treasury)), expectedAmtFromWBTC, 300);  // Less than 3% difference
-
-        gov.distributeToHolders();  // Empty treasury balance of USDC
-
-        /*** Convert WETH ***/
-        assertTrue(!fakeGov.try_convertERC20(WETH));  // Non-governor can't convert
-        assertTrue(     gov.try_convertERC20(WETH));  // Governor can convert
-
-        assertEq(IERC20(WETH).balanceOf(address(treasury)),         0);
-        assertEq(IERC20(DAI).balanceOf(address(treasury)),  100 ether);
-
-        withinPercentage(IERC20(USDC).balanceOf(address(treasury)), expectedAmtFromWETH, 300);  // Less than 3% difference
-
-        gov.distributeToHolders();  // Empty treasury balance of USDC
-
-        /*** Convert DAI ***/
-        assertTrue(!fakeGov.try_convertERC20(DAI));  // Non-governor can't convert
-        assertTrue(     gov.try_convertERC20(DAI));  // Governor can convert
-
-        assertEq(IERC20(WETH).balanceOf(address(treasury)), 0);
-        assertEq(IERC20(DAI).balanceOf(address(treasury)),  0);
-
-        withinPercentage(IERC20(USDC).balanceOf(address(treasury)), expectedAmtFromDAI, 300);  // Less than 3% difference
+    function updateFundsReceived() external {
+        // Todo: implementation
     }
 
 }
+
+interface Hevm {
+
+    function warp(uint256) external;
+
+    function store(address,bytes32,bytes32) external;
+
+}
+
+interface IBasicFDT {
+
+    /**
+        @dev Withdraws all available funds for the calling FDT holder.
+     */
+    function withdrawFunds() external;
+
+}
+
+contract Holder {
+
+    function withdrawFunds(address token) external {
+        IBasicFDT(token).withdrawFunds();
+    }
+
+}
+
+contract MapleTreasuryTest is DSTest {
+
+    Governor      realGov; 
+    Governor      fakeGov;
+    MapleTreasury treasury;
+    MapleGlobals  globals;
+    MockToken     mpl;
+    MockToken     mock;
+    Hevm          hevm;
+    Holder        holder1;
+    Holder        holder2;
+    GlobalAdmin   realGlobalAdmin;
+
+    constructor() public {
+        hevm = Hevm(address(bytes20(uint160(uint256(keccak256("hevm cheat code")))))); 
+    }
+
+    function setUp() public {
+
+        realGlobalAdmin = new GlobalAdmin();
+        realGov         = new Governor();
+        fakeGov         = new Governor();
+        mpl             = new MockToken("Maple",    "MPL");
+        mock            = new MockToken("MK token", "MK");
+        globals         = new MapleGlobals(address(realGov), address(mpl), address(realGlobalAdmin));
+        treasury        = new MapleTreasury(address(mpl), address(mock), address(1), address(globals));
+        holder1         = new Holder();
+        holder2         = new Holder();
+
+        mpl.mint(address(this),  100);
+        mock.mint(address(this), 100);
+    }
+
+    function test_setGlobals() public {
+        IMapleGlobals globals2 = fakeGov.createGlobals(address(mpl));  // Create upgraded MapleGlobals
+        assertEq(address(treasury.globals()), address(globals));
+
+        assertTrue(!fakeGov.try_treasury_setGlobals(address(treasury), address(globals2)));  // Non-governor cannot set new globals
+
+        globals2 = realGov.createGlobals(address(mpl)); // Create upgraded MapleGlobals
+
+        assertTrue(realGov.try_treasury_setGlobals(address(treasury), address(globals2))); // Governor can set new globals
+        assertEq(address(treasury.globals()), address(globals2)); // Globals is updated
+    }
+
+    function test_reclaimERC20() public {
+        assertEq(mock.balanceOf(address(treasury)), 0);
+
+        mock.transfer(address(treasury), 100);
+
+        assertEq(mock.balanceOf(address(treasury)), 100);
+        assertEq(mock.balanceOf(address(realGov)),  0);
+        assertEq(treasury.globals(), address(globals));
+
+        assertTrue(!fakeGov.try_treasury_reclaimERC20(address(treasury), address(mock), 40));  // Non-governor can't withdraw
+        assertTrue( realGov.try_treasury_reclaimERC20(address(treasury), address(mock), 40));
+
+        assertEq(mock.balanceOf(address(treasury)), 60);  // Can be distributed to MPL holders
+        assertEq(mock.balanceOf(address(realGov)),  40);  // Withdrawn to MapleDAO address for funding
+    }
+
+    function test_distributeToHolders() public {
+        assertEq(mpl.balanceOf(address(holder1)), 0);
+        assertEq(mpl.balanceOf(address(holder2)), 0);
+
+        mpl.transfer(address(holder1), mpl.totalSupply() * 25 / 100);  // 25%
+        mpl.transfer(address(holder2), mpl.totalSupply() * 75 / 100);  // 75%
+
+        assertEq(mpl.balanceOf(address(holder1)), 25);
+        assertEq(mpl.balanceOf(address(holder2)), 75);
+
+        assertEq(mock.balanceOf(address(treasury)), 0);
+
+        mock.transfer(address(treasury), 100);
+
+        assertEq(mock.balanceOf(address(treasury)), 100);
+        assertEq(mock.balanceOf(address(mpl)),      0);
+
+        assertTrue(!fakeGov.try_treasury_distributeToHolders(address(treasury)));  // Non-governor can't distribute
+        assertTrue( realGov.try_treasury_distributeToHolders(address(treasury)));  // Governor can distribute
+
+        assertEq(mock.balanceOf(address(treasury)), 0);  // Withdraws all funds
+        assertEq(mock.balanceOf(address(mpl)),      100);  // Withdrawn to MPL address, where accounts can claim funds
+        assertEq(mock.balanceOf(address(holder1)),  0);  // Token holder hasn't claimed
+        assertEq(mock.balanceOf(address(holder2)),  0);  // Token holder hasn't claimed
+    }
+
+    // TODO: Test remain for the `converERC20`, It would get added during integration tests.
+
+}
+

@@ -59,10 +59,7 @@ contract MapleTreasuryTest is DSTest {
     MapleTreasury         treasury;
     MapleGlobals           globals;
     MockToken                  mpl;
-    MockToken                mock1;
-    MockToken                mock2;
-    MockToken                mock3;
-    MockToken                mock4;
+    MockToken                 mock;
     Hevm                      hevm;
     Holder                     hal;
     Holder                     hue;
@@ -77,21 +74,15 @@ contract MapleTreasuryTest is DSTest {
         realGlobalAdmin = new GlobalAdmin();
         realGov         = new Governor();
         fakeGov         = new Governor();
-        mpl             = new MockToken("Maple",     "MPL");
-        mock1           = new MockToken("MK1 token", "MK1");
-        mock3           = new MockToken("MK2 token", "MK2");
-        mock4           = new MockToken("MK3 token", "MK3");
-        mock2           = new MockToken("MK4 token", "MK4");
+        mpl             = new MockToken("Maple",   "MPL");
+        mock            = new MockToken("MK token", "MK");
         globals         = new MapleGlobals(address(realGov), address(mpl), address(realGlobalAdmin));
-        treasury        = new MapleTreasury(address(mpl), address(mock2), address(1), address(globals));
+        treasury        = new MapleTreasury(address(mpl), address(mock), address(1), address(globals));
         hal             = new Holder();
         hue             = new Holder();
 
-          mpl.mint(address(this), 10000000 * 10 ** 18);
-        mock1.mint(address(this),           100 ether);
-        mock3.mint(address(this),        10 * 10 ** 8);
-        mock4.mint(address(this),            10 ether);
-        mock2.mint(address(this),                 100);
+        mpl.mint(address(this),  100);
+        mock.mint(address(this), 100);
     }
 
     function test_setGlobals() public {
@@ -107,19 +98,19 @@ contract MapleTreasuryTest is DSTest {
     }
 
     function test_withdrawFunds() public {
-        assertEq(mock2.balanceOf(address(treasury)), 0);
+        assertEq(mock.balanceOf(address(treasury)), 0);
 
-        mock2.transfer(address(treasury), 100);
+        mock.transfer(address(treasury), 100);
 
-        assertEq(mock2.balanceOf(address(treasury)), 100);
-        assertEq(mock2.balanceOf(address(realGov)),    0);
+        assertEq(mock.balanceOf(address(treasury)), 100);
+        assertEq(mock.balanceOf(address(realGov)),    0);
         assertEq(treasury.globals(), address(globals));
 
-        assertTrue(!fakeGov.try_treasury_reclaimERC20(address(treasury), address(mock2), 40));  // Non-governor can't withdraw
-        assertTrue( realGov.try_treasury_reclaimERC20(address(treasury), address(mock2), 40));
+        assertTrue(!fakeGov.try_treasury_reclaimERC20(address(treasury), address(mock), 40));  // Non-governor can't withdraw
+        assertTrue( realGov.try_treasury_reclaimERC20(address(treasury), address(mock), 40));
 
-        assertEq(mock2.balanceOf(address(treasury)), 60);  // Can be distributed to MPL holders
-        assertEq(mock2.balanceOf(address(realGov)),  40);  // Withdrawn to MapleDAO address for funding
+        assertEq(mock.balanceOf(address(treasury)), 60);  // Can be distributed to MPL holders
+        assertEq(mock.balanceOf(address(realGov)),  40);  // Withdrawn to MapleDAO address for funding
     }
 
     function test_distributeToHolders() public {
@@ -129,23 +120,23 @@ contract MapleTreasuryTest is DSTest {
         mpl.transfer(address(hal), mpl.totalSupply() * 25 / 100);  // 25%
         mpl.transfer(address(hue), mpl.totalSupply() * 75 / 100);  // 75%
 
-        assertEq(mpl.balanceOf(address(hal)), 2_500_000 ether);
-        assertEq(mpl.balanceOf(address(hue)), 7_500_000 ether);
+        assertEq(mpl.balanceOf(address(hal)), 25);
+        assertEq(mpl.balanceOf(address(hue)), 75);
 
-        assertEq(mock2.balanceOf(address(treasury)), 0);
+        assertEq(mock.balanceOf(address(treasury)), 0);
 
-        mock2.transfer(address(treasury), 100);
+        mock.transfer(address(treasury), 100);
 
-        assertEq(mock2.balanceOf(address(treasury)), 100);
-        assertEq(mock2.balanceOf(address(mpl)),        0);
+        assertEq(mock.balanceOf(address(treasury)), 100);
+        assertEq(mock.balanceOf(address(mpl)),        0);
 
         assertTrue(!fakeGov.try_treasury_distributeToHolders(address(treasury)));  // Non-governor can't distribute
         assertTrue( realGov.try_treasury_distributeToHolders(address(treasury)));  // Governor can distribute
 
-        assertEq(mock2.balanceOf(address(treasury)),   0);  // Withdraws all funds
-        assertEq(mock2.balanceOf(address(mpl)),      100);  // Withdrawn to MPL address, where accounts can claim funds
-        assertEq(mock2.balanceOf(address(hal)), 0);  // Token holder hasn't claimed
-        assertEq(mock2.balanceOf(address(hue)), 0);  // Token holder hasn't claimed
+        assertEq(mock.balanceOf(address(treasury)), 0);  // Withdraws all funds
+        assertEq(mock.balanceOf(address(mpl)),    100);  // Withdrawn to MPL address, where accounts can claim funds
+        assertEq(mock.balanceOf(address(hal)), 0);  // Token holder hasn't claimed
+        assertEq(mock.balanceOf(address(hue)), 0);  // Token holder hasn't claimed
     }
 
     // TODO: Test remain for the `converERC20`, It would get added during integration tests.

@@ -54,16 +54,16 @@ contract Holder {
 
 contract MapleTreasuryTest is DSTest {
 
-    Governor               realGov; 
-    Governor               fakeGov;
-    MapleTreasury         treasury;
-    MapleGlobals           globals;
-    MockToken                  mpl;
-    MockToken                 mock;
-    Hevm                      hevm;
-    Holder                     holder1;
-    Holder                     holder2;
-    GlobalAdmin    realGlobalAdmin;
+    Governor      realGov; 
+    Governor      fakeGov;
+    MapleTreasury treasury;
+    MapleGlobals  globals;
+    MockToken     mpl;
+    MockToken     mock;
+    Hevm          hevm;
+    Holder        holder1;
+    Holder        holder2;
+    GlobalAdmin   realGlobalAdmin;
 
     constructor() public {
         hevm = Hevm(address(bytes20(uint160(uint256(keccak256("hevm cheat code")))))); 

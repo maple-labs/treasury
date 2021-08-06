@@ -1,17 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.6.11;
 
+import { IMapleGlobals } from "../../modules/globals/contracts/interfaces/IMapleGlobals.sol";
 import { IERC20 }        from "../../modules/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+
+import { DSTest }        from "../../modules/ds-test/src/test.sol";
+import { MapleGlobals }  from "../../modules/globals/contracts/MapleGlobals.sol";
 import { ERC20 }         from "../../modules/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import { Util }          from "../../modules/util/contracts/Util.sol";
-import { IMapleGlobals } from "../../modules/globals/contracts/interfaces/IMapleGlobals.sol";
-import { MapleGlobals }  from "../../modules/globals/contracts/MapleGlobals.sol";
-import { DSTest }        from "../../modules/ds-test/src/test.sol";
 
 import { Governor }       from "./accounts/Governor.sol";
 import { GlobalAdmin }    from "./accounts/GlobalAdmin.sol";
 import { MapleTreasury }  from "../MapleTreasury.sol";
 import { IMapleTreasury } from "../interfaces/IMapleTreasury.sol";
+
+interface IBasicFDT {
+    function withdrawFunds() external;
+}
 
 contract MockToken is ERC20 {
 
@@ -24,23 +29,6 @@ contract MockToken is ERC20 {
     function updateFundsReceived() external {
         // Todo: implementation
     }
-
-}
-
-interface Hevm {
-
-    function warp(uint256) external;
-
-    function store(address,bytes32,bytes32) external;
-
-}
-
-interface IBasicFDT {
-
-    /**
-        @dev Withdraws all available funds for the calling FDT holder.
-     */
-    function withdrawFunds() external;
 
 }
 
@@ -60,14 +48,9 @@ contract MapleTreasuryTest is DSTest {
     MapleGlobals  globals;
     MockToken     mpl;
     MockToken     mock;
-    Hevm          hevm;
     Holder        holder1;
     Holder        holder2;
     GlobalAdmin   realGlobalAdmin;
-
-    constructor() public {
-        hevm = Hevm(address(bytes20(uint160(uint256(keccak256("hevm cheat code")))))); 
-    }
 
     function setUp() public {
 

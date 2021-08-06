@@ -4,42 +4,16 @@ pragma solidity 0.6.11;
 import { SafeMath }          from "../modules/openzeppelin-contracts/contracts/math/SafeMath.sol";
 import { IERC20, SafeERC20 } from "../modules/openzeppelin-contracts/contracts/token/ERC20/SafeERC20.sol";
 import { Util }              from "../modules/util/contracts/Util.sol";
-import { IMapleGlobals }     from "../modules/globals/contracts/interfaces/IMapleGlobals.sol";
+
+import { IMapleGlobals } from "../modules/util/contracts/interfaces/IMapleGlobals.sol";
 
 import { IMapleTreasury } from "./interfaces/IMapleTreasury.sol";
 
-interface IMapleTokenLike {
-
-    function updateFundsReceived() external;
-
-}
-
-interface IUniswapRouterLike {
-
-    function swapExactTokensForTokens(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external returns (uint256[] memory amounts);
-
-    function swapETHForExactTokens(
-        uint256 amountOut,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external payable returns (uint256[] memory amounts);
-
-    function quote(
-        uint256 amountA,
-        uint256 reserveA,
-        uint256 reserveB
-    ) external pure returns (uint256 amountB);
-
-    function WETH() external pure returns (address);
-
-}
+import {
+    IMapleGlobals as IMapleGlobalsLike,
+    IMapleTokenLike,
+    IUniswapRouterLike
+} from "./interfaces/Interfaces.sol";
 
 /// @title MapleTreasury earns revenue from Loans and distributes it to token holders and the Maple development team.
 contract MapleTreasury is IMapleTreasury {
@@ -75,7 +49,7 @@ contract MapleTreasury is IMapleTreasury {
         @dev Checks that `msg.sender` is the Governor.
      */
     modifier isGovernor() {
-        require(msg.sender == IMapleGlobals(globals).governor(), "MT:NOT_GOV");
+        require(msg.sender == IMapleGlobalsLike(globals).governor(), "MT:NOT_GOV");
         _;
     }
 
@@ -100,10 +74,10 @@ contract MapleTreasury is IMapleTreasury {
     function convertERC20(address asset) isGovernor external override {
         require(asset != fundsToken, "MT:ASSET_IS_FUNDS_TOKEN");
 
-        IMapleGlobals _globals = IMapleGlobals(globals);
+        IMapleGlobalsLike _globals = IMapleGlobalsLike(globals);
 
         uint256 assetBalance = IERC20(asset).balanceOf(address(this));
-        uint256 minAmount    = Util.calcMinAmount(address(_globals), asset, fundsToken, assetBalance);
+        uint256 minAmount    = Util.calcMinAmount(IMapleGlobals(address(_globals)), asset, fundsToken, assetBalance);
 
         IERC20(asset).safeApprove(uniswapRouter, uint256(0));
         IERC20(asset).safeApprove(uniswapRouter, assetBalance);

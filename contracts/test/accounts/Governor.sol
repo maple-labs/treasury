@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.6.11;
 
-import { IERC20 }        from "../../../modules/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { IMapleGlobals } from "../../../modules/globals/contracts/interfaces/IMapleGlobals.sol";
-import { MapleGlobals }  from "../../../modules/globals/contracts/MapleGlobals.sol";
+interface IMapleGlobalsLike {
+    function setPriceOracle(address, address) external;
+}
 
-import { IMapleTreasury }  from "../../interfaces/IMapleTreasury.sol";
+interface IMapleTreasuryLike {
+    function distributeToHolders() external;
+}
 
 contract Governor {
 
@@ -13,11 +15,11 @@ contract Governor {
     /*** Direct Functions ***/
     /************************/
     function setPriceOracle(address globals, address asset, address oracle) external {
-        IMapleGlobals(globals).setPriceOracle(asset, oracle); 
+        IMapleGlobalsLike(globals).setPriceOracle(asset, oracle); 
     }
 
     function distributeToHolders(address treasury) external {
-        IMapleTreasury(treasury).distributeToHolders(); 
+        IMapleTreasuryLike(treasury).distributeToHolders(); 
     }
 
     /*********************/
@@ -41,10 +43,6 @@ contract Governor {
     function try_treasury_convertERC20(address treasury, address asset) external returns (bool ok) {
         string memory sig = "convertERC20(address)";
         (ok,) = treasury.call(abi.encodeWithSignature(sig, asset));
-    }
-
-    function createGlobals(address mpl) external returns (MapleGlobals globals) {
-        return MapleGlobals(new MapleGlobals(address(this), mpl, address(1)));
     }
 
 }

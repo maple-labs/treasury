@@ -1,24 +1,30 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.6.11;
 
-import { IMapleGlobals } from "../../modules/globals/contracts/interfaces/IMapleGlobals.sol";
-import { IERC20 }        from "../../modules/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-
 import { DSTest }        from "../../modules/ds-test/src/test.sol";
-import { MapleGlobals }  from "../../modules/globals/contracts/MapleGlobals.sol";
 import { ERC20 }         from "../../modules/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import { Util }          from "../../modules/util/contracts/Util.sol";
 
 import { Governor }       from "./accounts/Governor.sol";
 import { GlobalAdmin }    from "./accounts/GlobalAdmin.sol";
-import { MapleTreasury }  from "../MapleTreasury.sol";
-import { IMapleTreasury } from "../interfaces/IMapleTreasury.sol";
+import { Holder }         from "./accounts/Holder.sol";
 
-interface IBasicFDT {
-    function withdrawFunds() external;
+import { MapleTreasury }  from "../MapleTreasury.sol";
+
+contract GlobalsMock {
+
+    address public governor;
+    address public mpl;
+    address public globalAdmin;
+
+    constructor(address _governor, address _mpl, address _globalAdmin) public {
+        governor    = _governor;
+        mpl         = _mpl;
+        globalAdmin = _globalAdmin;
+    }
+
 }
 
-contract MockToken is ERC20 {
+contract TokenMock is ERC20 {
 
     constructor(string memory name, string memory symbol) public ERC20(name, symbol) {}
 
@@ -27,15 +33,7 @@ contract MockToken is ERC20 {
     }
 
     function updateFundsReceived() external {
-        // Todo: implementation
-    }
-
-}
-
-contract Holder {
-
-    function withdrawFunds(address token) external {
-        IBasicFDT(token).withdrawFunds();
+        // TODO: implementation
     }
 
 }
@@ -45,9 +43,9 @@ contract MapleTreasuryTest is DSTest {
     Governor      realGov; 
     Governor      fakeGov;
     MapleTreasury treasury;
-    MapleGlobals  globals;
-    MockToken     mpl;
-    MockToken     mock;
+    GlobalsMock   globals;
+    TokenMock     mpl;
+    TokenMock     mock;
     Holder        holder1;
     Holder        holder2;
     GlobalAdmin   realGlobalAdmin;
@@ -57,9 +55,9 @@ contract MapleTreasuryTest is DSTest {
         realGlobalAdmin = new GlobalAdmin();
         realGov         = new Governor();
         fakeGov         = new Governor();
-        mpl             = new MockToken("Maple",    "MPL");
-        mock            = new MockToken("MK token", "MK");
-        globals         = new MapleGlobals(address(realGov), address(mpl), address(realGlobalAdmin));
+        mpl             = new TokenMock("Maple",    "MPL");
+        mock            = new TokenMock("MK token", "MK");
+        globals         = new GlobalsMock(address(realGov), address(mpl), address(realGlobalAdmin));
         treasury        = new MapleTreasury(address(mpl), address(mock), address(1), address(globals));
         holder1         = new Holder();
         holder2         = new Holder();
@@ -69,15 +67,12 @@ contract MapleTreasuryTest is DSTest {
     }
 
     function test_setGlobals() public {
-        IMapleGlobals globals2 = fakeGov.createGlobals(address(mpl));  // Create upgraded MapleGlobals
         assertEq(address(treasury.globals()), address(globals));
 
-        assertTrue(!fakeGov.try_treasury_setGlobals(address(treasury), address(globals2)));  // Non-governor cannot set new globals
+        assertTrue(!fakeGov.try_treasury_setGlobals(address(treasury), address(1)));  // Non-governor cannot set new globals
+        assertTrue( realGov.try_treasury_setGlobals(address(treasury), address(1))); // Governor can set new globals
 
-        globals2 = realGov.createGlobals(address(mpl)); // Create upgraded MapleGlobals
-
-        assertTrue(realGov.try_treasury_setGlobals(address(treasury), address(globals2))); // Governor can set new globals
-        assertEq(address(treasury.globals()), address(globals2)); // Globals is updated
+        assertEq(address(treasury.globals()), address(1)); // Globals is updated
     }
 
     function test_reclaimERC20() public {

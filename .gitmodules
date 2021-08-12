@@ -7,6 +7,3 @@
 [submodule "modules/util"]
 	path = modules/util
 	url = https://github.com/maple-labs/util.git
-[submodule "modules/globals"]
-	path = modules/globals
-	url = https://github.com/maple-labs/globals.git

@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.6.11;
 
-import { DSTest }        from "../../modules/ds-test/src/test.sol";
-import { ERC20 }         from "../../modules/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+// TODO: Test remain for the `convertERC20`, It would get added during integration tests.
 
-import { Governor }       from "./accounts/Governor.sol";
+import { DSTest } from "../../modules/ds-test/src/test.sol";
+import { ERC20 }  from "../../modules/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
-import { MapleTreasury }  from "../MapleTreasury.sol";
+import { Governor } from "./accounts/Governor.sol";
+
+import { MapleTreasury } from "../MapleTreasury.sol";
 
 contract GlobalsMock {
 
@@ -48,12 +50,12 @@ contract MapleTreasuryTest is DSTest {
     address constant globalAdmin = address(3);
 
     function setUp() public {
-        realGov         = new Governor();
-        fakeGov         = new Governor();
-        mpl             = new TokenMock("Maple",    "MPL");
-        mockToken       = new TokenMock("MK token", "MK");
-        globals         = new GlobalsMock(address(realGov), address(mpl), address(globalAdmin));
-        treasury        = new MapleTreasury(address(mpl), address(mockToken), address(1), address(globals));
+        realGov   = new Governor();
+        fakeGov   = new Governor();
+        mpl       = new TokenMock("Maple",    "MPL");
+        mockToken = new TokenMock("MK token", "MK");
+        globals   = new GlobalsMock(address(realGov), address(mpl), address(globalAdmin));
+        treasury  = new MapleTreasury(address(mpl), address(mockToken), address(1), address(globals));
 
         mpl.mint(address(this),       100);
         mockToken.mint(address(this), 100);
@@ -63,7 +65,7 @@ contract MapleTreasuryTest is DSTest {
         assertEq(address(treasury.globals()), address(globals));
 
         assertTrue(!fakeGov.try_treasury_setGlobals(address(treasury), address(1)));  // Non-governor cannot set new globals
-        assertTrue( realGov.try_treasury_setGlobals(address(treasury), address(1))); // Governor can set new globals
+        assertTrue( realGov.try_treasury_setGlobals(address(treasury), address(1)));  // Governor can set new globals
 
         assertEq(address(treasury.globals()), address(1)); // Globals is updated
     }
@@ -110,7 +112,4 @@ contract MapleTreasuryTest is DSTest {
         assertEq(mockToken.balanceOf(address(holder2)),  0);    // Token holder hasn't claimed
     }
 
-    // TODO: Test remain for the `converERC20`, It would get added during integration tests.
-
 }
-

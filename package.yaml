@@ -1,0 +1,8 @@
+name: treasury
+version: 1.0.0
+source: contracts
+packages:
+  - path: contracts/MapleTreasury.sol
+    contractName: MapleTreasury
+    customChecksum: 0xa58c0b0d4adca6bba10cbe946fe12acd5c21900ab62bb83295c662363fd9bd35
+customDescription: Treasury Artifacts and ABIs

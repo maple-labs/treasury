@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.6.11;
 
-import { SafeMath }          from "../../../../lib/openzeppelin-contracts/contracts/math/SafeMath.sol";
-import { IERC20, SafeERC20 } from "../../../../lib/openzeppelin-contracts/contracts/token/ERC20/SafeERC20.sol";
+import { SafeMath }          from "../modules/openzeppelin-contracts/contracts/math/SafeMath.sol";
+import { IERC20, SafeERC20 } from "../modules/openzeppelin-contracts/contracts/token/ERC20/SafeERC20.sol";
+import { Util }              from "../modules/util/contracts/Util.sol";
 
-import { IMapleToken }    from "../../../external-interfaces/IMapleToken.sol";
-import { IUniswapRouter } from "../../../external-interfaces/IUniswapRouter.sol";
-
-import { Util } from "../../../libraries/util/contracts/Util.sol";
-
-import { IMapleGlobals } from "../../globals/contracts/interfaces/IMapleGlobals.sol";
+import { IMapleGlobals } from "../modules/util/contracts/interfaces/IMapleGlobals.sol";
 
 import { IMapleTreasury } from "./interfaces/IMapleTreasury.sol";
+
+import {
+    IMapleGlobals as IMapleGlobalsLike,
+    IMapleTokenLike,
+    IUniswapRouterLike
+} from "./interfaces/Interfaces.sol";
 
 /// @title MapleTreasury earns revenue from Loans and distributes it to token holders and the Maple development team.
 contract MapleTreasury is IMapleTreasury {
@@ -47,7 +49,7 @@ contract MapleTreasury is IMapleTreasury {
         @dev Checks that `msg.sender` is the Governor.
      */
     modifier isGovernor() {
-        require(msg.sender == IMapleGlobals(globals).governor(), "MT:NOT_GOV");
+        require(msg.sender == IMapleGlobalsLike(globals).governor(), "MT:NOT_GOV");
         _;
     }
 
@@ -65,17 +67,17 @@ contract MapleTreasury is IMapleTreasury {
         IERC20 _fundsToken = IERC20(fundsToken);
         uint256 distributeAmount = _fundsToken.balanceOf(address(this));
         _fundsToken.safeTransfer(mpl, distributeAmount);
-        IMapleToken(mpl).updateFundsReceived();
+        IMapleTokenLike(mpl).updateFundsReceived();
         emit DistributedToHolders(distributeAmount);
     }
 
     function convertERC20(address asset) isGovernor external override {
         require(asset != fundsToken, "MT:ASSET_IS_FUNDS_TOKEN");
 
-        IMapleGlobals _globals = IMapleGlobals(globals);
+        IMapleGlobalsLike _globals = IMapleGlobalsLike(globals);
 
         uint256 assetBalance = IERC20(asset).balanceOf(address(this));
-        uint256 minAmount    = Util.calcMinAmount(_globals, asset, fundsToken, assetBalance);
+        uint256 minAmount    = Util.calcMinAmount(IMapleGlobals(address(_globals)), asset, fundsToken, assetBalance);
 
         IERC20(asset).safeApprove(uniswapRouter, uint256(0));
         IERC20(asset).safeApprove(uniswapRouter, assetBalance);
@@ -90,7 +92,7 @@ contract MapleTreasury is IMapleTreasury {
 
         if (middleAsset) path[2] = fundsToken;
 
-        uint256[] memory returnAmounts = IUniswapRouter(uniswapRouter).swapExactTokensForTokens(
+        uint256[] memory returnAmounts = IUniswapRouterLike(uniswapRouter).swapExactTokensForTokens(
             assetBalance,
             minAmount.sub(minAmount.mul(_globals.maxSwapSlippage()).div(10_000)),
             path,

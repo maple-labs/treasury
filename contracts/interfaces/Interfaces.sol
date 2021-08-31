@@ -2,13 +2,19 @@
 pragma solidity 0.6.11;
 
 interface IMapleGlobals {
+
     function governor() external view returns (address);
+
     function defaultUniswapPath(address tokenA, address tokenB) external view returns (address);
+
     function maxSwapSlippage() external view returns (uint256);
+
 }
 
 interface IMapleTokenLike {
+
     function updateFundsReceived() external;
+
 }
 
 interface IUniswapRouterLike {

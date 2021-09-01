@@ -25,6 +25,6 @@ contract TokenMock is ERC20 {
         _mint(to, amt);
     }
 
-    function updateFundsReceived() external { }
+    function updateFundsReceived() external {}
 
 }
